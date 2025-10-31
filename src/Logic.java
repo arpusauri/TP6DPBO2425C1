@@ -35,6 +35,10 @@ public class Logic implements ActionListener, KeyListener {
     int pipeVelocityX = -4;
 
     boolean gameStarted = false;
+    boolean gameOver = false;
+
+    int score = 0;
+    int bestScore = 0;
 
     public Logic() {
         birdImage = new ImageIcon(getClass().getResource("assets/bird.png")).getImage();
@@ -70,8 +74,20 @@ public class Logic implements ActionListener, KeyListener {
         return pipes;
     }
 
+    public int getScore() {
+        return score;
+    }
+
+    public int getBestScore() {
+        return bestScore;
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
     public void move() {
-        if (!gameStarted) {
+        if (!gameStarted || gameOver) {
             return;
         }
 
@@ -79,14 +95,34 @@ public class Logic implements ActionListener, KeyListener {
         player.setVelocityY(player.getVelocityY() + gravity);
         player.setPosY(player.getPosY() + player.getVelocityY());
 
-        // Keep player within screen bounds
-        player.setPosY(Math.max(player.getPosY(), 0)); // Top boundary
-        player.setPosY(Math.min(player.getPosY(), frameHeight - playerHeight)); // Bottom boundary
+        // Check if player hit bottom or top
+        if (player.getPosY() >= frameHeight - playerHeight || player.getPosY() <= 0) {
+            gameOver = true;
+            System.out.println("Game Over! Hit screen boundary!");
+            return;
+        }
 
-        // Move pipes
+        // Move pipes and check collisions
         for (int i = 0; i < pipes.size(); i++) {
             Pipe pipe = pipes.get(i);
             pipe.setPosX(pipe.getPosX() + pipeVelocityX);
+
+            // Check collision with pipe
+            if (checkCollision(player, pipe)) {
+                gameOver = true;
+                System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
+                return;
+            }
+        }
+
+        // Check score - only count upper pipes (every other pipe starting from index 0)
+        for (int i = 0; i < pipes.size(); i += 2) {
+            Pipe pipe = pipes.get(i);
+            if (!pipe.isPassed() && player.getPosX() > pipe.getPosX() + pipe.getWidth()) {
+                pipe.setPassed(true);
+                score++;
+                System.out.println("Score: " + score);
+            }
         }
 
         // Remove pipes that are off screen
@@ -115,13 +151,18 @@ public class Logic implements ActionListener, KeyListener {
                 e.getKeyCode() == KeyEvent.VK_UP ||
                 e.getKeyCode() == KeyEvent.VK_W) {
 
+            if (gameOver) {
+                // Restart game
+                restartGame();
+                return;
+            }
+
             if (!gameStarted) {
                 gameStarted = true;
-                System.out.println("Game dimulai!");
+                System.out.println("Game started!");
             }
 
             player.setVelocityY(-9);
-            System.out.println("Aduh nabrak!: " + player.getVelocityY());
         }
     }
 
@@ -138,5 +179,29 @@ public class Logic implements ActionListener, KeyListener {
         Pipe lowerPipe = new Pipe(pipeStartPosX, (randomPosY + openingspace + pipeHeight),
                 pipeWidth, pipeHeight, lowerPipeImage);
         pipes.add(lowerPipe);
+    }
+
+    // Collision detection using rectangle intersection
+    public boolean checkCollision(Player player, Pipe pipe) {
+        return player.getPosX() < pipe.getPosX() + pipe.getWidth() &&
+                player.getPosX() + player.getWidth() > pipe.getPosX() &&
+                player.getPosY() < pipe.getPosY() + pipe.getHeight() &&
+                player.getPosY() + player.getHeight() > pipe.getPosY();
+    }
+
+    public void restartGame() {
+        // Update best score if current score is higher
+        if (score > bestScore) {
+            bestScore = (int)score;
+            System.out.println("New Best Score: " + bestScore);
+        }
+
+        player.setPosY(playerStartPosY);
+        player.setVelocityY(0);
+        pipes.clear();
+        score = 0;
+        gameOver = false;
+        gameStarted = false;
+        System.out.println("Game restarted!");
     }
 }
