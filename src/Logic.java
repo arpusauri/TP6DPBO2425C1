@@ -4,9 +4,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 
-public class Logic implements ActionListener, KeyListener {
+public class Logic implements ActionListener, KeyListener, MouseListener {
     int frameWidth = 360;
     int frameHeight = 640;
 
@@ -36,9 +38,12 @@ public class Logic implements ActionListener, KeyListener {
 
     boolean gameStarted = false;
     boolean gameOver = false;
+    boolean showFlash = false;
 
     int score = 0;
     int bestScore = 0;
+
+    SoundManager soundManager;
 
     public Logic() {
         birdImage = new ImageIcon(getClass().getResource("assets/bird.png")).getImage();
@@ -47,6 +52,9 @@ public class Logic implements ActionListener, KeyListener {
         lowerPipeImage = new ImageIcon(getClass().getResource("assets/lowerPipe.png")).getImage();
         upperPipeImage = new ImageIcon(getClass().getResource("assets/upperPipe.png")).getImage();
         pipes = new ArrayList<Pipe>();
+
+        // Initialize sound manager
+        soundManager = new SoundManager();
 
         pipesCooldown = new Timer(1500, new ActionListener() {
             @Override
@@ -86,6 +94,10 @@ public class Logic implements ActionListener, KeyListener {
         return gameOver;
     }
 
+    public boolean shouldShowFlash() {
+        return showFlash;
+    }
+
     public void move() {
         if (!gameStarted || gameOver) {
             return;
@@ -98,7 +110,20 @@ public class Logic implements ActionListener, KeyListener {
         // Check if player hit bottom or top
         if (player.getPosY() >= frameHeight - playerHeight || player.getPosY() <= 0) {
             gameOver = true;
+            showFlash = true;
+            soundManager.playHit();
             System.out.println("Game Over! Hit screen boundary!");
+
+            // Hide flash after short delay
+            Timer flashTimer = new Timer(100, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    showFlash = false;
+                    ((Timer)e.getSource()).stop();
+                }
+            });
+            flashTimer.setRepeats(false);
+            flashTimer.start();
             return;
         }
 
@@ -110,6 +135,7 @@ public class Logic implements ActionListener, KeyListener {
             // Check collision with pipe
             if (checkCollision(player, pipe)) {
                 gameOver = true;
+                soundManager.playHit();
                 System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
                 return;
             }
@@ -121,6 +147,7 @@ public class Logic implements ActionListener, KeyListener {
             if (!pipe.isPassed() && player.getPosX() > pipe.getPosX() + pipe.getWidth()) {
                 pipe.setPassed(true);
                 score++;
+                soundManager.playPoint();
                 System.out.println("Score: " + score);
             }
         }
@@ -146,15 +173,25 @@ public class Logic implements ActionListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
+        // M key to toggle mute (only during gameplay, not game over)
+        if (e.getKeyCode() == KeyEvent.VK_M && !gameOver) {
+            soundManager.toggleMute();
+            return;
+        }
+
+        // R key to restart
+        if (e.getKeyCode() == KeyEvent.VK_R && gameOver) {
+            restartGame();
+            return;
+        }
+
         // Accept SPACE, UP arrow, or W key to flap
         if (e.getKeyCode() == KeyEvent.VK_SPACE ||
                 e.getKeyCode() == KeyEvent.VK_UP ||
                 e.getKeyCode() == KeyEvent.VK_W) {
 
             if (gameOver) {
-                // Restart game
-                restartGame();
-                return;
+                return; // Don't flap when game is over
             }
 
             if (!gameStarted) {
@@ -163,11 +200,39 @@ public class Logic implements ActionListener, KeyListener {
             }
 
             player.setVelocityY(-9);
+            soundManager.playJump();
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {}
+
+    // Mouse listener methods
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        if (gameOver) {
+            return; // Don't flap when game is over
+        }
+
+        if (!gameStarted) {
+            gameStarted = true;
+            System.out.println("Game started!");
+        }
+
+        player.setVelocityY(-9);
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {}
+
+    @Override
+    public void mouseReleased(MouseEvent e) {}
+
+    @Override
+    public void mouseEntered(MouseEvent e) {}
+
+    @Override
+    public void mouseExited(MouseEvent e) {}
 
     public void placePipes() {
         int randomPosY = (int) (pipeStartPosY - pipeHeight / 4 - Math.random() * (pipeHeight / 2));
@@ -192,7 +257,7 @@ public class Logic implements ActionListener, KeyListener {
     public void restartGame() {
         // Update best score if current score is higher
         if (score > bestScore) {
-            bestScore = (int)score;
+            bestScore = score;
             System.out.println("New Best Score: " + bestScore);
         }
 
@@ -202,6 +267,30 @@ public class Logic implements ActionListener, KeyListener {
         score = 0;
         gameOver = false;
         gameStarted = false;
+        showFlash = false;
         System.out.println("Game restarted!");
+    }
+
+    public void returnToMenu() {
+        // Update best score if current score is higher
+        if (score > bestScore) {
+            bestScore = score;
+            System.out.println("New Best Score: " + bestScore);
+        }
+
+        // Reset game state
+        player.setPosY(playerStartPosY);
+        player.setVelocityY(0);
+        pipes.clear();
+        score = 0;
+        gameOver = false;
+        gameStarted = false;
+        showFlash = false;
+
+        // Switch to menu
+        if (view != null) {
+            view.getCardLayout().show(view.getMainContainer(), "menu");
+        }
+        System.out.println("Returned to menu!");
     }
 }
