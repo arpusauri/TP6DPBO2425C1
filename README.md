@@ -71,3 +71,4 @@ Terdapat 2 tombol yaitu :
       1. Program akan berhenti
 
 # Dokumentasi
+https://github.com/user-attachments/assets/f4c21ce8-f27f-4353-aad2-39224bc186de
