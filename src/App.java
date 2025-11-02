@@ -1,11 +1,32 @@
 import javax.swing.*;
 import java.awt.*;
+import java.net.URL;
 
 public class App {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Flappy Bird");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
+
+        // Custom Window Icon
+        try {
+            // get url
+            URL iconURL = App.class.getResource("/assets/winicon.png");
+
+            // load image
+            if (iconURL != null) {
+                ImageIcon icon = new ImageIcon(iconURL);
+                Image image = icon.getImage();
+
+                // set window icon
+                frame.setIconImage(image);
+            } else {
+                // warning: file nout found
+                System.err.println("Icon resource not found!");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Create CardLayout and main container
         CardLayout cardLayout = new CardLayout();
@@ -28,7 +49,7 @@ public class App {
 
         frame.add(mainContainer);
         frame.pack();
-        frame.setLocationRelativeTo(null); // Center on screen AFTER pack()
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }

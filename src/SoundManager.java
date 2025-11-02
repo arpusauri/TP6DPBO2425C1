@@ -19,9 +19,8 @@ public class SoundManager {
             // Load point/score sound
             pointSound = loadSound("assets/point.wav");
 
-            System.out.println("Sounds loaded successfully!");
         } catch (Exception e) {
-            System.out.println("Warning: Could not load sound files. Game will run without sound.");
+            System.err.println("Could not load sound files! Game will run without sound!");
         }
     }
 
@@ -29,7 +28,7 @@ public class SoundManager {
         try {
             URL soundURL = getClass().getClassLoader().getResource(path);
             if (soundURL == null) {
-                System.out.println("Could not find: " + path);
+                System.err.println("Could not find: " + path);
                 return null;
             }
 
@@ -38,7 +37,7 @@ public class SoundManager {
             clip.open(audioStream);
             return clip;
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            System.out.println("Error loading sound: " + path);
+            System.err.println("Error loading sound: " + path);
             return null;
         }
     }

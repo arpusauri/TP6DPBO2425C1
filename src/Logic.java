@@ -63,8 +63,8 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         try {
             groundImage = new ImageIcon(getClass().getResource("assets/ground.png")).getImage();
         } catch (Exception e) {
-            groundImage = null; // Will draw colored rectangle instead
-            System.out.println("Ground image not found, using colored ground");
+            groundImage = null;
+            System.err.println("Ground image not found, using colored ground!");
         }
 
         // Create two ground segments for seamless scrolling
@@ -184,7 +184,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             gameOver = true;
             showFlash = true;
             soundManager.playHit();
-            System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
+            System.out.println("Game Over! Hit Ground! Final Score: " + (int)score);
 
             // Hide flash after short delay
             Timer flashTimer = new Timer(100, new ActionListener() {
@@ -231,9 +231,9 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        // M key to toggle mute (only during gameplay, not game over)
-        if (e.getKeyCode() == KeyEvent.VK_M && !gameOver) {
-            soundManager.toggleMute();
+        // M key to go back to menu
+        if (e.getKeyCode() == KeyEvent.VK_M && gameOver) {
+            returnToMenu();
             return;
         }
 
