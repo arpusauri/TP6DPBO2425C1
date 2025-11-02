@@ -12,6 +12,8 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     int frameWidth = 360;
     int frameHeight = 640;
 
+    int groundHeight = 90;
+
     int playerStartPosX = frameWidth / 8;
     int playerStartPosY = frameHeight / 2;
     int playerWidth = 34;
@@ -29,6 +31,10 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     Image lowerPipeImage;
     Image upperPipeImage;
     ArrayList<Pipe> pipes;
+
+    Image groundImage;
+    Ground ground1;
+    Ground ground2;
 
     Timer gameLoop;
     Timer pipesCooldown;
@@ -53,6 +59,18 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         upperPipeImage = new ImageIcon(getClass().getResource("assets/upperPipe.png")).getImage();
         pipes = new ArrayList<Pipe>();
 
+        // Try to load ground image, fallback to null if not found
+        try {
+            groundImage = new ImageIcon(getClass().getResource("assets/ground.png")).getImage();
+        } catch (Exception e) {
+            groundImage = null; // Will draw colored rectangle instead
+            System.out.println("Ground image not found, using colored ground");
+        }
+
+        // Create two ground segments for seamless scrolling
+        ground1 = new Ground(0, frameHeight - groundHeight, frameWidth, groundHeight, groundImage);
+        ground2 = new Ground(frameWidth, frameHeight - groundHeight, frameWidth, groundHeight, groundImage);
+
         // Initialize sound manager
         soundManager = new SoundManager();
 
@@ -66,7 +84,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         });
         pipesCooldown.start();
 
-        gameLoop = new Timer(1000 / 60, this);
+        gameLoop = new Timer(1000 / 45, this); // Reduced from 60 to 50 FPS for better performance
         gameLoop.start();
     }
 
@@ -80,6 +98,14 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
 
     public ArrayList<Pipe> getPipes() {
         return pipes;
+    }
+
+    public Ground getGround1() {
+        return ground1;
+    }
+
+    public Ground getGround2() {
+        return ground2;
     }
 
     public int getScore() {
@@ -135,10 +161,42 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             // Check collision with pipe
             if (checkCollision(player, pipe)) {
                 gameOver = true;
+                showFlash = true;
                 soundManager.playHit();
                 System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
+
+                // Hide flash after short delay
+                Timer flashTimer = new Timer(100, new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        showFlash = false;
+                        ((Timer)e.getSource()).stop();
+                    }
+                });
+                flashTimer.setRepeats(false);
+                flashTimer.start();
                 return;
             }
+        }
+
+        // Ground collision check (same as pipe collision)
+        if (checkCollisionWithGround(player, ground1) || checkCollisionWithGround(player, ground2)) {
+            gameOver = true;
+            showFlash = true;
+            soundManager.playHit();
+            System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
+
+            // Hide flash after short delay
+            Timer flashTimer = new Timer(100, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    showFlash = false;
+                    ((Timer)e.getSource()).stop();
+                }
+            });
+            flashTimer.setRepeats(false);
+            flashTimer.start();
+            return;
         }
 
         // Check score - only count upper pipes (every other pipe starting from index 0)
@@ -252,6 +310,14 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
                 player.getPosX() + player.getWidth() > pipe.getPosX() &&
                 player.getPosY() < pipe.getPosY() + pipe.getHeight() &&
                 player.getPosY() + player.getHeight() > pipe.getPosY();
+    }
+
+    // Collision detection for ground using rectangle intersection
+    public boolean checkCollisionWithGround(Player player, Ground ground) {
+        return player.getPosX() < ground.getPosX() + ground.getWidth() &&
+                player.getPosX() + player.getWidth() > ground.getPosX() &&
+                player.getPosY() < ground.getPosY() + ground.getHeight() &&
+                player.getPosY() + player.getHeight() > ground.getPosY();
     }
 
     public void restartGame() {

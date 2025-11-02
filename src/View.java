@@ -17,7 +17,7 @@ public class View extends JPanel {
 
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.white);
-        background = new ImageIcon(getClass().getResource("assets/background.png")).getImage();
+        background = new ImageIcon(getClass().getResource("assets/background-day.png")).getImage();
 
         setFocusable(true);
         addKeyListener(logic);
@@ -36,13 +36,6 @@ public class View extends JPanel {
             g.drawImage(background, 0, 0, width, height, null);
         }
 
-        // Draw player
-        Player player = logic.getPlayer();
-        if (player != null) {
-            g.drawImage(player.getImage(), player.getPosX(), player.getPosY(),
-                    player.getWidth(), player.getHeight(), null);
-        }
-
         // Draw pipes
         ArrayList<Pipe> pipes = logic.getPipes();
         if (pipes != null) {
@@ -51,6 +44,37 @@ public class View extends JPanel {
                 g.drawImage(pipe.getImage(), pipe.getPosX(), pipe.getPosY(),
                         pipe.getWidth(), pipe.getHeight(), null);
             }
+        }
+
+        // Draw ground
+        Ground ground1 = logic.getGround1();
+        Ground ground2 = logic.getGround2();
+
+        if (ground1 != null && ground2 != null) {
+            if (ground1.getImage() != null) {
+                // Draw ground image if available
+                g.drawImage(ground1.getImage(), ground1.getPosX(), ground1.getPosY(),
+                        ground1.getWidth(), ground1.getHeight(), null);
+                g.drawImage(ground2.getImage(), ground2.getPosX(), ground2.getPosY(),
+                        ground2.getWidth(), ground2.getHeight(), null);
+            } else {
+                // Draw colored ground if no image
+                g.setColor(new Color(222, 216, 149)); // Tan color
+                g.fillRect(ground1.getPosX(), ground1.getPosY(), ground1.getWidth(), ground1.getHeight());
+                g.fillRect(ground2.getPosX(), ground2.getPosY(), ground2.getWidth(), ground2.getHeight());
+
+                // Add green grass on top
+                g.setColor(new Color(87, 158, 35));
+                g.fillRect(ground1.getPosX(), ground1.getPosY(), ground1.getWidth(), 20);
+                g.fillRect(ground2.getPosX(), ground2.getPosY(), ground2.getWidth(), 20);
+            }
+        }
+
+        // Draw player (on top of ground)
+        Player player = logic.getPlayer();
+        if (player != null) {
+            g.drawImage(player.getImage(), player.getPosX(), player.getPosY(),
+                    player.getWidth(), player.getHeight(), null);
         }
 
         // Draw score
@@ -64,7 +88,6 @@ public class View extends JPanel {
             g.drawString("Best: " + logic.getBestScore(), width / 2 - 60, height / 2 + 50);
             g.setFont(new Font("Arial", Font.PLAIN, 18));
             g.drawString("Press R to restart", width / 2 - 85, height / 2 + 100);
-            g.drawString("Press M for menu", width / 2 - 80, height / 2 + 130);
         } else {
             // Current score during gameplay
             g.drawString(String.valueOf(logic.getScore()), 10, 35);
