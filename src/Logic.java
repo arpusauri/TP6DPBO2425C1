@@ -9,72 +9,85 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 
 public class Logic implements ActionListener, KeyListener, MouseListener {
+    // set frame size
     int frameWidth = 360;
     int frameHeight = 640;
 
+    // set ground height
     int groundHeight = 90;
 
+    // set player position & size
     int playerStartPosX = frameWidth / 8;
     int playerStartPosY = frameHeight / 2;
     int playerWidth = 34;
     int playerHeight = 24;
 
+    // set pipe position & size
     int pipeStartPosX = frameWidth;
     int pipeStartPosY = 0;
     int pipeWidth = 64;
     int pipeHeight = 512;
 
+    // player
     View view;
     Image birdImage;
     Player player;
 
+    // pipes
     Image lowerPipeImage;
     Image upperPipeImage;
     ArrayList<Pipe> pipes;
 
+    // ground
     Image groundImage;
     Ground ground1;
     Ground ground2;
 
+    // game loop
     Timer gameLoop;
     Timer pipesCooldown;
     int gravity = 1;
-
     int pipeVelocityX = -4;
 
+    // game status & condition
     boolean gameStarted = false;
     boolean gameOver = false;
     boolean showFlash = false;
     boolean showGetReady = true; // Show "Get Ready" at start
 
+    // score
     int score = 0;
     int bestScore = 0;
 
+    // sound effect
     SoundManager soundManager;
 
     public Logic() {
+        // load bird (player)
         birdImage = new ImageIcon(getClass().getResource("assets/bird.png")).getImage();
         player = new Player(playerStartPosX, playerStartPosY, playerWidth, playerHeight, birdImage);
 
+        // load pipes
         lowerPipeImage = new ImageIcon(getClass().getResource("assets/lowerPipe.png")).getImage();
         upperPipeImage = new ImageIcon(getClass().getResource("assets/upperPipe.png")).getImage();
         pipes = new ArrayList<Pipe>();
 
-        // Try to load ground image, fallback to null if not found
+        // load ground
         try {
             groundImage = new ImageIcon(getClass().getResource("assets/ground.png")).getImage();
-        } catch (Exception e) {
+        } catch (Exception e) { // set ground with bg-color when image not found
             groundImage = null;
             System.err.println("Ground image not found, using colored ground!");
         }
 
-        // Create two ground segments for seamless scrolling
+        // create ground segments
         ground1 = new Ground(0, frameHeight - groundHeight, frameWidth, groundHeight, groundImage);
         ground2 = new Ground(frameWidth, frameHeight - groundHeight, frameWidth, groundHeight, groundImage);
 
-        // Initialize sound manager
+        // initialize sound manager
         soundManager = new SoundManager();
 
+        // place pipes when game starts
         pipesCooldown = new Timer(1500, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
@@ -85,10 +98,12 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         });
         pipesCooldown.start();
 
+        // start game & fps
         gameLoop = new Timer(1000 / 45, this);
         gameLoop.start();
     }
 
+    // getter & setter
     public void setView(View view) {
         this.view = view;
     }
@@ -117,35 +132,43 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         return bestScore;
     }
 
+    // game over boolean
     public boolean isGameOver() {
         return gameOver;
     }
 
+    // show flash boolean
     public boolean shouldShowFlash() {
         return showFlash;
     }
 
+    // show get ready boolean
     public boolean shouldShowGetReady() {
         return showGetReady;
     }
 
+    // move function
     public void move() {
+        // pause when game not started / game over
         if (!gameStarted || gameOver) {
             return;
         }
 
-        // Move player with gravity
+        // move player using gravity
         player.setVelocityY(player.getVelocityY() + gravity);
         player.setPosY(player.getPosY() + player.getVelocityY());
 
-        // Check if player hit bottom or top
+        // check if player out of bounds
         if (player.getPosY() >= frameHeight - playerHeight || player.getPosY() <= 0) {
+            // end game
             gameOver = true;
+            // show flash vfx
             showFlash = true;
+            // play hit sfx
             soundManager.playHit();
             System.out.println("Game Over! Hit screen boundary!");
 
-            // Hide flash after short delay
+            // hide flash after delay (showing)
             Timer flashTimer = new Timer(100, new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -158,19 +181,20 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             return;
         }
 
-        // Move pipes and check collisions
+        // move pipes
         for (int i = 0; i < pipes.size(); i++) {
             Pipe pipe = pipes.get(i);
             pipe.setPosX(pipe.getPosX() + pipeVelocityX);
 
-            // Check collision with pipe
+            // check collision with pipes
             if (checkCollision(player, pipe)) {
+                // end game
                 gameOver = true;
                 showFlash = true;
                 soundManager.playHit();
                 System.out.println("Game Over! Hit pipe! Final Score: " + score);
 
-                // Hide flash after short delay
+                // hit sfx
                 Timer flashTimer = new Timer(100, new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -184,14 +208,15 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             }
         }
 
-        // Ground collision check (same as pipe collision)
+        // check collision with pipe
         if (checkCollisionWithGround(player, ground1) || checkCollisionWithGround(player, ground2)) {
+            // end game
             gameOver = true;
             showFlash = true;
             soundManager.playHit();
             System.out.println("Game Over! Hit Ground! Final Score: " + score);
 
-            // Hide flash after short delay
+            // show sfx
             Timer flashTimer = new Timer(100, new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -204,7 +229,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             return;
         }
 
-        // Check score - only count upper pipes (every other pipe starting from index 0)
+        // check and count score when passing pipes
         for (int i = 0; i < pipes.size(); i += 2) {
             Pipe pipe = pipes.get(i);
             if (!pipe.isPassed() && player.getPosX() > pipe.getPosX() + pipe.getWidth()) {
@@ -215,7 +240,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             }
         }
 
-        // Remove pipes that are off screen
+        // limit pipes off screen
         for (int i = pipes.size() - 1; i >= 0; i--) {
             if (pipes.get(i).getPosX() + pipeWidth < 0) {
                 pipes.remove(i);
@@ -234,36 +259,43 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     @Override
     public void keyTyped(KeyEvent e) {}
 
+    // key listener
     @Override
     public void keyPressed(KeyEvent e) {
-        // M key to go back to menu
+        // press m to go to menu (when game is over)
         if (e.getKeyCode() == KeyEvent.VK_M && gameOver) {
             returnToMenu();
             return;
         }
 
-        // R key to restart
+        // press r to go to restart game (when game is over)
         if (e.getKeyCode() == KeyEvent.VK_R && gameOver) {
             restartGame();
             return;
         }
 
-        // Accept SPACE, UP arrow, or W key to flap
+        // player control (W / UP ARROW / SPACE)
         if (e.getKeyCode() == KeyEvent.VK_SPACE ||
                 e.getKeyCode() == KeyEvent.VK_UP ||
                 e.getKeyCode() == KeyEvent.VK_W) {
 
+            // prevent input when game is over
             if (gameOver) {
-                return; // Don't flap when game is over
+                return;
             }
 
+            // when game not started
             if (!gameStarted) {
+                // set game to start
                 gameStarted = true;
-                showGetReady = false; // Hide "Get Ready" message
+                // and hide get ready
+                showGetReady = false;
                 System.out.println("Game started!");
             }
 
+            // set player y velocity
             player.setVelocityY(-9);
+            // jump sfx when pressing keys
             soundManager.playJump();
         }
     }
@@ -271,21 +303,27 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     @Override
     public void keyReleased(KeyEvent e) {}
 
-    // Mouse listener methods
+    // mouse listener
     @Override
     public void mouseClicked(MouseEvent e) {
-        if (gameOver) {
-            return; // Don't flap when game is over
-        }
+        // only accept LMB
+        if (e.getButton() == MouseEvent.BUTTON1) {
+            // prevent input when game is over
+            if (gameOver) {
+                return;
+            }
 
-        if (!gameStarted) {
-            gameStarted = true;
-            showGetReady = false; // Hide "Get Ready" message
-            System.out.println("Game started!");
-        }
+            // set game to start
+            if (!gameStarted) {
+                gameStarted = true;
+                showGetReady = false;
+                System.out.println("Game started!");
+            }
 
-        player.setVelocityY(-9);
-        soundManager.playJump();
+            // set player velocity & play sfx
+            player.setVelocityY(-9);
+            soundManager.playJump();
+        }
     }
 
     @Override
@@ -300,19 +338,24 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     @Override
     public void mouseExited(MouseEvent e) {}
 
+    // function to place pipes randomly
     public void placePipes() {
+        // set y position
         int randomPosY = (int) (pipeStartPosY - pipeHeight / 4 - Math.random() * (pipeHeight / 2));
+        // set pipes opening
         int openingspace = frameHeight / 4;
 
+        // create upper pipe based on random pos y
         Pipe upperPipe = new Pipe(pipeStartPosX, randomPosY, pipeWidth, pipeHeight, upperPipeImage);
         pipes.add(upperPipe);
 
+        // create lower pipe
         Pipe lowerPipe = new Pipe(pipeStartPosX, (randomPosY + openingspace + pipeHeight),
                 pipeWidth, pipeHeight, lowerPipeImage);
         pipes.add(lowerPipe);
     }
 
-    // Collision detection using rectangle intersection
+    // pipe collision detection
     public boolean checkCollision(Player player, Pipe pipe) {
         return player.getPosX() < pipe.getPosX() + pipe.getWidth() &&
                 player.getPosX() + player.getWidth() > pipe.getPosX() &&
@@ -320,7 +363,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
                 player.getPosY() + player.getHeight() > pipe.getPosY();
     }
 
-    // Collision detection for ground using rectangle intersection
+    // ground collision detection
     public boolean checkCollisionWithGround(Player player, Ground ground) {
         return player.getPosX() < ground.getPosX() + ground.getWidth() &&
                 player.getPosX() + player.getWidth() > ground.getPosX() &&
@@ -328,13 +371,15 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
                 player.getPosY() + player.getHeight() > ground.getPosY();
     }
 
+    // restart game
     public void restartGame() {
-        // Update best score if current score is higher
+        // update best score when current score is higher
         if (score > bestScore) {
             bestScore = score;
             System.out.println("New Best Score: " + bestScore);
         }
 
+        // start over game
         player.setPosY(playerStartPosY);
         player.setVelocityY(0);
         pipes.clear();
@@ -342,18 +387,19 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         gameOver = false;
         gameStarted = false;
         showFlash = false;
-        showGetReady = true; // Show "Get Ready" again
+        showGetReady = true;
         System.out.println("Game restarted!");
     }
 
+    // return to menu
     public void returnToMenu() {
-        // Update best score if current score is higher
+        // update best score when current score is higher
         if (score > bestScore) {
             bestScore = score;
             System.out.println("New Best Score: " + bestScore);
         }
 
-        // Reset game state
+        // start over game (reset game state)
         player.setPosY(playerStartPosY);
         player.setVelocityY(0);
         pipes.clear();
@@ -363,7 +409,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         showFlash = false;
         showGetReady = true; // Reset "Get Ready" for next time
 
-        // Switch to menu
+        // switch to menu layout
         if (view != null) {
             view.getCardLayout().show(view.getMainContainer(), "menu");
         }

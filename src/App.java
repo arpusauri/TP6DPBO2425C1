@@ -28,7 +28,7 @@ public class App {
             e.printStackTrace();
         }
 
-        // Create CardLayout and main container
+        // Create CardLayout & main container
         CardLayout cardLayout = new CardLayout();
         JPanel mainContainer = new JPanel(cardLayout);
 
@@ -47,6 +47,7 @@ public class App {
         // Show menu first
         cardLayout.show(mainContainer, "menu");
 
+        // Create Frame
         frame.add(mainContainer);
         frame.pack();
         frame.setLocationRelativeTo(null);

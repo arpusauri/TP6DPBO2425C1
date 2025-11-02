@@ -3,29 +3,31 @@ import java.io.IOException;
 import java.net.URL;
 
 public class SoundManager {
+    // sfx list
     private Clip jumpSound;
     private Clip hitSound;
     private Clip pointSound;
-    private boolean muted = false;
 
     public SoundManager() {
         try {
-            // Load jump sound
+            // loard jump sound
             jumpSound = loadSound("assets/jump.wav");
 
-            // Load hit/death sound
+            // load hit/death sound
             hitSound = loadSound("assets/hit.wav");
 
-            // Load point/score sound
+            // load point/score sound
             pointSound = loadSound("assets/point.wav");
 
-        } catch (Exception e) {
+        } catch (Exception e) { // sound files not found
             System.err.println("Could not load sound files! Game will run without sound!");
         }
     }
 
+    // load sound
     private Clip loadSound(String path) {
         try {
+            // get sound url
             URL soundURL = getClass().getClassLoader().getResource(path);
             if (soundURL == null) {
                 System.err.println("Could not find: " + path);
@@ -42,8 +44,10 @@ public class SoundManager {
         }
     }
 
+    // play jump sound
     public void playJump() {
-        if (!muted && jumpSound != null) {
+        if (jumpSound != null) {
+            // stop previous jump sound when playing new jump sound (overlay)
             if (jumpSound.isRunning()) {
                 jumpSound.stop();
             }
@@ -52,9 +56,11 @@ public class SoundManager {
         }
     }
 
+    // play hit sound
     public void playHit() {
-        if (!muted && hitSound != null) {
+        if (hitSound != null) {
             if (hitSound.isRunning()) {
+                // stop previous hit sound when playing new hit sound (overlay)
                 hitSound.stop();
             }
             hitSound.setFramePosition(0);
@@ -62,28 +68,15 @@ public class SoundManager {
         }
     }
 
+    // play point sound
     public void playPoint() {
-        if (!muted && pointSound != null) {
+        if (pointSound != null) {
             if (pointSound.isRunning()) {
+                // stop previous hit sound when playing new hit sound (overlay)
                 pointSound.stop();
             }
             pointSound.setFramePosition(0);
             pointSound.start();
         }
-    }
-
-    public void toggleMute() {
-        muted = !muted;
-        System.out.println("Sound " + (muted ? "muted" : "unmuted"));
-    }
-
-    public boolean isMuted() {
-        return muted;
-    }
-
-    public void cleanup() {
-        if (jumpSound != null) jumpSound.close();
-        if (hitSound != null) hitSound.close();
-        if (pointSound != null) pointSound.close();
     }
 }
