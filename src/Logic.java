@@ -45,6 +45,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
     boolean gameStarted = false;
     boolean gameOver = false;
     boolean showFlash = false;
+    boolean showGetReady = true; // Show "Get Ready" at start
 
     int score = 0;
     int bestScore = 0;
@@ -84,7 +85,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         });
         pipesCooldown.start();
 
-        gameLoop = new Timer(1000 / 45, this); // Reduced from 60 to 50 FPS for better performance
+        gameLoop = new Timer(1000 / 45, this);
         gameLoop.start();
     }
 
@@ -122,6 +123,10 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
 
     public boolean shouldShowFlash() {
         return showFlash;
+    }
+
+    public boolean shouldShowGetReady() {
+        return showGetReady;
     }
 
     public void move() {
@@ -163,7 +168,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
                 gameOver = true;
                 showFlash = true;
                 soundManager.playHit();
-                System.out.println("Game Over! Hit pipe! Final Score: " + (int)score);
+                System.out.println("Game Over! Hit pipe! Final Score: " + score);
 
                 // Hide flash after short delay
                 Timer flashTimer = new Timer(100, new ActionListener() {
@@ -184,7 +189,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
             gameOver = true;
             showFlash = true;
             soundManager.playHit();
-            System.out.println("Game Over! Hit Ground! Final Score: " + (int)score);
+            System.out.println("Game Over! Hit Ground! Final Score: " + score);
 
             // Hide flash after short delay
             Timer flashTimer = new Timer(100, new ActionListener() {
@@ -254,6 +259,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
 
             if (!gameStarted) {
                 gameStarted = true;
+                showGetReady = false; // Hide "Get Ready" message
                 System.out.println("Game started!");
             }
 
@@ -274,10 +280,12 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
 
         if (!gameStarted) {
             gameStarted = true;
+            showGetReady = false; // Hide "Get Ready" message
             System.out.println("Game started!");
         }
 
         player.setVelocityY(-9);
+        soundManager.playJump();
     }
 
     @Override
@@ -334,6 +342,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         gameOver = false;
         gameStarted = false;
         showFlash = false;
+        showGetReady = true; // Show "Get Ready" again
         System.out.println("Game restarted!");
     }
 
@@ -352,6 +361,7 @@ public class Logic implements ActionListener, KeyListener, MouseListener {
         gameOver = false;
         gameStarted = false;
         showFlash = false;
+        showGetReady = true; // Reset "Get Ready" for next time
 
         // Switch to menu
         if (view != null) {

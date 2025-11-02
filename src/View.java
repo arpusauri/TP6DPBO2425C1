@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class View extends JPanel {
@@ -9,6 +11,12 @@ public class View extends JPanel {
     private Image background;
     private CardLayout cardLayout;
     private JPanel mainContainer;
+    private Font customFont;
+
+    // Get Ready message sprite
+    private Image getReadyImage;
+    private Image tapImage;
+    private Image gameOverImage;
 
     public View(Logic logic, CardLayout cardLayout, JPanel mainContainer) {
         this.logic = logic;
@@ -17,7 +25,41 @@ public class View extends JPanel {
 
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.white);
-        background = new ImageIcon(getClass().getResource("assets/background-day.png")).getImage();
+        background = new ImageIcon(getClass().getResource("assets/background.png")).getImage();
+        gameOverImage = new ImageIcon(getClass().getResource("assets/gameover.png")).getImage();
+
+        // Load and extract "Get Ready" from sprite sheet
+        try {
+            Image messageSprite = new ImageIcon(getClass().getResource("assets/message.png")).getImage();
+            // Convert to BufferedImage to extract subimage
+            BufferedImage buffered = new BufferedImage(184, 267, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = buffered.createGraphics();
+            g2d.drawImage(messageSprite, 0, 0, null);
+            g2d.dispose();
+
+            // Extract "Get Ready" (first image, top portion: 0 to 89 pixels)
+            getReadyImage = buffered.getSubimage(0, 89, 184, 80);
+            // tapImage = buffered.getSubimage(0, 178, 184, 89);
+        } catch (Exception e) {
+            getReadyImage = null;
+            System.err.println("Could not load Get Ready image: " + e.getMessage());
+            // tapImage = null;
+            // System.err.println("Could not load Tap image: " + e.getMessage());
+        }
+
+        // Load custom font (unchanged)
+        try {
+            InputStream fontStream = getClass().getResourceAsStream("assets/Minecraft.ttf");
+            if (fontStream == null) {
+                System.err.println("Custom font resource not found.");
+                customFont = new Font("Arial", Font.PLAIN, 24);
+            } else {
+                customFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(24f);
+            }
+        } catch (Exception e) {
+            customFont = new Font("Arial", Font.PLAIN, 24);
+            System.err.println("Could not load custom font: " + e.getMessage());
+        }
 
         setFocusable(true);
         addKeyListener(logic);
@@ -78,23 +120,47 @@ public class View extends JPanel {
         }
 
         // Draw score
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 32));
+        g.setColor(new Color(255, 100, 0));
+        g.setFont(customFont.deriveFont(Font.BOLD, 32));
 
         if (logic.isGameOver()) {
             // Game Over screen
-            g.drawString("Game Over", width / 2 - 80, height / 2 - 50);
+            int imgX = (width - 184) / 2;
+            int imgY = height / 3;
+            g.drawImage(gameOverImage, imgX, imgY, null);
             g.drawString("Score: " + logic.getScore(), width / 2 - 70, height / 2);
             g.drawString("Best: " + logic.getBestScore(), width / 2 - 60, height / 2 + 50);
-            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.setFont(customFont.deriveFont(Font.BOLD, 18));
             g.drawString("Press R to restart", width / 2 - 85, height / 2 + 100);
+            g.drawString("Press M to go back", width / 2 - 85, height / 2 + 125);
+        } else if (logic.shouldShowGetReady()) {
+            // "Get Ready" screen - show before game starts
+            if (getReadyImage != null) {
+                // Draw "Get Ready" image centered
+                int imgX = (width - 184) / 2;
+                int imgY = height / 4;
+                g.drawImage(getReadyImage, imgX, imgY, 184, 80, null);
+            } else {
+                // Fallback to text if image not loaded
+                g.drawString("GET READY!", width / 2 - 100, height / 3);
+            }
+
+            /*
+            if (tapImage != null) {
+                // Draw "Get Ready" image centered
+                int imgX = (width - 184) / 2;
+                int imgY = height / 2;
+                g.drawImage(tapImage, imgX, imgY, 184, 89, null);
+            } else {
+                // Fallback to text if image not loaded
+                g.drawString("Press to start!", width / 2 - 100, height / 3);
+            }
+            */
         } else {
             // Current score during gameplay
+            g.setColor(Color.WHITE);
             g.drawString(String.valueOf(logic.getScore()), 10, 35);
 
-            // Best score in top right
-            g.setFont(new Font("Arial", Font.PLAIN, 20));
-            g.drawString("Best: " + logic.getBestScore(), width - 100, 30);
         }
 
         // Draw white flash on death
